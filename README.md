@@ -1,2 +1,2 @@
-# ffscripts
-scripts that use ffmpeg and ffprobe to to various things 
+## FFSCRIPTS
+a collection of scripts using [ffmpeg](https://ffmpeg.org/) to do various batch jobs
