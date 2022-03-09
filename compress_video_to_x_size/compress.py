@@ -47,6 +47,11 @@ def get_parser():
         help="Put all the bitrate into the video stream"
     )
     rename.add_argument(
+        "-ao", "--audio-only",
+        dest="audioonly", action="store_true",
+        help="Removes video and only compresses the audio as mp3"
+    )
+    rename.add_argument(
         "-fp", "--ffmpeg", 
         dest="ffmpeg_path", metavar="PATH",
         help="Specify the path to ffmpeg"
@@ -74,7 +79,7 @@ def set_date_modified(file_path, date_time):
     os.utime(file_path, (dt_epoch, dt_epoch))
  
 
-def compress_video_file(file_path, output_file_path, target_file_size_mb, *, FFMPEG_PATH=FFMPEG, FFPROBE_PATH=FFPROBE, PRINT=False, NO_AUDIO=False):
+def compress_video_file(file_path, output_file_path, target_file_size_mb, *, FFMPEG_PATH=FFMPEG, FFPROBE_PATH=FFPROBE, PRINT=False, NO_AUDIO=False, AUDIO_ONLY=False):
     
     # https://trac.ffmpeg.org/wiki/Encode/H.264#twopass
 
@@ -95,6 +100,10 @@ def compress_video_file(file_path, output_file_path, target_file_size_mb, *, FFM
     video_bitrate = total_bitrate * (3/4)
     audio_bitrate = total_bitrate * (1/4)
 
+    if NO_AUDIO:
+        audio_bitrate = 0
+        video_bitrate = total_bitrate
+
     # instead of using a temp file, you can pass NUL or /dev/null depending on windows/linux
     if (os.name == "nt"):
         no_temp = "NUL"
@@ -104,24 +113,38 @@ def compress_video_file(file_path, output_file_path, target_file_size_mb, *, FFM
     # the .log file ffmpeg will create, just use a temp file
     two_pass_log = os.path.join(tempfile.gettempdir(), "ffmpeg2pass-0.log")
 
-    # 2 pass encoding, slower, but lets you target specific file size
-    p1 = subprocess.run([FFMPEG_PATH, '-v', 'error', '-y', 
-                    '-i', file_path, '-c:v', 'libx264', '-b:v', str(video_bitrate) + 'k',
-                    '-pass', '1', '-an', '-f', 'mp4', '-passlogfile', two_pass_log, no_temp], stdout=PIPE, stderr=PIPE)
+    if AUDIO_ONLY:
+        audio_bitrate = total_bitrate
+        video_bitrate = 0 
 
-    # keep audio 
-    if not NO_AUDIO:
+        p1 = subprocess.run([FFMPEG_PATH, '-v', 'error', '-y', 
+                        '-i', file_path, '-b:a', str(audio_bitrate) + 'k',
+                        '-pass', '1', "-vn", '-f', 'mp3', 
+                        '-passlogfile', two_pass_log, no_temp], stdout=PIPE, stderr=PIPE)
+
         p2 = subprocess.run([FFMPEG_PATH, '-v', 'error', '-y', 
-                    '-i', file_path, '-c:v', 'libx264', '-b:v', str(video_bitrate) + 'k',
-                    '-pass', '2', '-c:a', 'aac', '-b:a', str(audio_bitrate) + 'k',  
-                    '-passlogfile', two_pass_log, str(output_file_path)], stdout=PIPE, stderr=PIPE)
-    
-    # remove audio from the video 
+                    '-i', file_path, '-b:a', str(audio_bitrate) + 'k',
+                    '-pass', '2', "-vn", '-f', 'mp3', 
+                    '-passlogfile', two_pass_log, str(output_file_path)], stdout=PIPE, stderr=PIPE) 
+
     else:
-        p2 = subprocess.run([FFMPEG_PATH, '-v', 'error', '-y', 
-                    '-i', file_path, '-c:v', 'libx264', '-b:v', str(video_bitrate) + 'k',
-                    '-pass', '2', '-an',
-                    '-passlogfile', two_pass_log, str(output_file_path)], stdout=PIPE, stderr=PIPE)
+        p1 = subprocess.run([FFMPEG_PATH, '-v', 'error', '-y', 
+                        '-i', file_path, '-c:v', 'libx264', '-b:v', str(video_bitrate) + 'k',
+                        '-pass', '1', '-an', '-f', 'mp4', '-passlogfile', two_pass_log, no_temp], stdout=PIPE, stderr=PIPE)
+
+        # keep audio 
+        if not NO_AUDIO:
+            p2 = subprocess.run([FFMPEG_PATH, '-v', 'error', '-y', 
+                        '-i', file_path, '-c:v', 'libx264', '-b:v', str(video_bitrate) + 'k',
+                        '-pass', '2', '-c:a', 'aac', '-b:a', str(audio_bitrate) + 'k',  
+                        '-passlogfile', two_pass_log, str(output_file_path)], stdout=PIPE, stderr=PIPE)
+        
+        # remove audio from the video 
+        else:
+            p2 = subprocess.run([FFMPEG_PATH, '-v', 'error', '-y', 
+                        '-i', file_path, '-c:v', 'libx264', '-b:v', str(video_bitrate) + 'k',
+                        '-pass', '2', '-an',
+                        '-passlogfile', two_pass_log, str(output_file_path)], stdout=PIPE, stderr=PIPE)
 
     p1err = p1.stderr.decode()
     p2err = p2.stderr.decode()
@@ -171,6 +194,9 @@ def main(_args):
     else:
         probe = FFPROBE
 
+    if args.audioonly and args.noaudio:
+        parser.error("Audio Only cannot be used with No Audio")
+
     os.system("") # enable color in windows
 
     total = len(args.inputs)
@@ -178,9 +204,16 @@ def main(_args):
     for i in args.inputs:
         print(f"working... ({c}/{total})")
 
+        if args.audioonly:
+            ext = ".mp3"
+
+        else:
+            ext = ".mp4"
+
+        tmp_name = i + "RE9ORQ0K.tmp" + ext
 
         if args.overwrite:
-            if compress_video_file(i, i + "RE9ORQ0K.tmp.mp4", float(target), FFMPEG_PATH=peg, FFPROBE_PATH=probe, PRINT=True, NO_AUDIO=args.noaudio):
+            if compress_video_file(i, tmp_name, float(target), FFMPEG_PATH=peg, FFPROBE_PATH=probe, PRINT=True, NO_AUDIO=args.noaudio, AUDIO_ONLY=args.audioonly):
                 
                 sleep(1)
 
@@ -190,10 +223,10 @@ def main(_args):
                     os.makedirs(os.path.dirname(tmp), exist_ok=True)
                     os.rename(i, tmp)
 
-                    if i.lower().strip().endswith(".mp4"):
-                        os.rename(i + "RE9ORQ0K.tmp.mp4", i)
+                    if i.lower().strip().endswith(ext):
+                        os.rename(tmp_name, i)
                     else:
-                        os.rename(i + "RE9ORQ0K.tmp.mp4", i + ".mp4")
+                        os.rename(tmp_name, i + ext)
 
                     os.unlink(tmp)
                     os.removedirs(os.path.dirname(tmp))
@@ -202,7 +235,7 @@ def main(_args):
                     print("\033[91mUnable to delete/overwrite the old file.\nTemp path: " + tmp + "\nOriginal path: " + i + "\033[0m")
 
         else:
-            compress_video_file(i, i + "RE9ORQ0K.mp4", float(target), FFMPEG_PATH=peg, FFPROBE_PATH=probe, PRINT=True, NO_AUDIO=args.noaudio)
+            compress_video_file(i, tmp_name, float(target), FFMPEG_PATH=peg, FFPROBE_PATH=probe, PRINT=True, NO_AUDIO=args.noaudio, AUDIO_ONLY=args.audioonly)
 
         c += 1
 
