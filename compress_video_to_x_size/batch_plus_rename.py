@@ -311,14 +311,20 @@ def main(_args):
             date_format.add_context(file)
             new_filename = date_format.format_text(new_filename)
 
-            standard_format.add_context(file + ".mp4") # force .mp4 file extension
+            if args.audioonly:
+                ext = ".mp3"
+
+            else:
+                ext = ".mp4"
+
+            standard_format.add_context(file + ext) # force .mp4 file extension
             new_filename = standard_format.format_text(new_filename)
 
             new_filepath     = os.path.join(dir, new_filename)
             print("   Compressing " + os.path.basename(file), end="...", flush=True)
 
             r = compress.compress_video_file(file, new_filepath, target, 
-                       FFMPEG_PATH=peg, FFPROBE_PATH=probe, PRINT=False, NO_AUDIO=args.noaudio)
+                       FFMPEG_PATH=peg, FFPROBE_PATH=probe, PRINT=False, NO_AUDIO=args.noaudio, AUDIO_ONLY=args.audioonly)
 
             if not r[0]:
                 print(" \033[91m-> ERROR: " + r[1].strip(), end="\033[0m\n")
