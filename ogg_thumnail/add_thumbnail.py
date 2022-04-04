@@ -52,7 +52,7 @@ def main():
     if _err:
         print(f"{RED}{_err}{ENDC}")
     else:
-        print("done.")
+        print(args.output)
 
 if __name__ == "__main__":
 

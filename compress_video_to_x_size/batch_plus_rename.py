@@ -270,7 +270,7 @@ def main(_args):
         format = args.format
 
     if args.target:
-        target = int(args.target)
+        target = float(args.target)
 
     if args.ffmpeg_path:
         peg = args.ffmpeg_path
