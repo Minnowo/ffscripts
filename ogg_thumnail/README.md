@@ -11,13 +11,13 @@ Adds images/thumbnails to ogg/opus files
 
  or
 
- if you just want to generate the metadata file run [ffmeta.py](ffmeta.py),
-    (show help command, listed below)
-    ```
-    python ffmeta.py -i 'filename.jpg'  -i 'anotherfile.jpg'
-    >> filename.jpg.base64
-    >> anotherfile.jpg.base64
-    ```
+ if you just want to generate the metadata file run [ffmeta.py](ffmeta.py). And use ffmpeg directly 
+   ```
+   python ffmeta.py -i 'filename.jpg'
+   >> filename.jpg.base64
+
+   ffmpeg -i audio.ogg -i filename.jpg.base64 -map_metadata 1 -codec copy out.ogg
+   ```
 
 ### Help
 
