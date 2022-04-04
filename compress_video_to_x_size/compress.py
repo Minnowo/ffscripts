@@ -7,9 +7,8 @@ import datetime
 
 from subprocess import  PIPE
 
-FFMPEG = "..\\.ffmpeg\\ffmpeg.exe"
-FFPROBE = "..\\.ffmpeg\\ffprobe.exe"
-
+FFMPEG = os.path.join(os.path.dirname(__file__), "..\\.ffmpeg\\ffmpeg.exe")
+FFPROBE = os.path.join(os.path.dirname(__file__), "..\\.ffmpeg\\ffprobe.exe")
 
 def get_parser():
 
