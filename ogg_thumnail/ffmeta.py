@@ -44,10 +44,10 @@ def generate_blobber(image_path : str, output : str):
             buffer += bytearray(DESCRIPTION.encode())
 
             # Picture width <32>
-            buffer += bytearray((0).to_bytes(4, byteorder="big", signed=False))
+            buffer += bytearray((0).to_bytes(4, byteorder="big", signed=False)) # why does this work?
 
             # Picture height <32>
-            buffer += bytearray((0).to_bytes(4, byteorder="big", signed=False))
+            buffer += bytearray((0).to_bytes(4, byteorder="big", signed=False))  # why does this work?
 
             # Picture color depth <32> (probably should figure this out, but seems to be okay at 0)
             buffer += bytearray((0).to_bytes(4, byteorder="big", signed=False))

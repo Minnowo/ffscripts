@@ -1,5 +1,6 @@
 ## OGG Thumbnail
-Adds images/thumbnails to ogg/opus files
+Adds images/thumbnails to ogg/opus files  
+[ffmeta.py](ffmeta.py) is a re-write of https://github.com/twopoint71/ogg-image-blobber  
 
 ### Usage
 
